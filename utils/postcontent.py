@@ -271,7 +271,7 @@ class TelCommitContent(object):
                 }
         requests.packages.urllib3.disable_warnings()
         resp = requests.post(self.url, data=payload, headers=self.headers,verify=False)
-        print(resp.json())
+        #print(resp.json())
         return resp.json()
 
 

@@ -1,6 +1,5 @@
 # coding:utf-8
 import pandas as pd
-from utils.servicecode import gic
 import re
 
 class HandleExcle(object):
@@ -13,12 +12,11 @@ class HandleExcle(object):
         self.first_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=3"
         self.second_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=2&evaluteCount=2&evaluatecount=2"
         self.third_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=1&evaluteCount=3&evaluatecount=3"
-        #self.base_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?fn=save&projid={}&serviceCode={}&evaluatefrom=4&userType&evaluatorName={}&evaluteCount=2&projectname={}&isOpened=1&checkState=1&evaluateContent&satisfactionEvaluate=5&syncStatus=I&isAboveLegalday=2&isMediation=2&serviceAttitudeEvaluate=1&isAnonymity=2&serviceAttitudeReason&workAttitudeEvaluate=1&workAttitudeReason=&evaluatorCardnumber={}&belongsystem&evaluatecount=2&evaluatorPhone={}&token=cdeb4ce0a0ea48b86c7be8fba9a412ca&huaKuaiFlag=true&checkFlag=notRobot&projectNo={}&proStatus=2&evaluateDetail="
     
     def get_tel(self,x):
         tel=self.df["手机号码"].at[x]
         if pd.isnull(tel):
-            tel = '0391-7118602'
+            tel = '0391-5917199'
         else:   
             tel = self.tel_num_judge(tel)
         return tel
@@ -59,18 +57,6 @@ class HandleExcle(object):
         return servicecode
 
 
-    def get_implementcode(self,x):
-        servicecode = self.get_servicecode(x)
-        projid = self.get_projid(x)
-        if servicecode in gic.keys():
-            implementcode=str(gic[servicecode])+projid[7:15]+projid[-4:]
-            return implementcode
-        else:
-            implementcode="错误"
-            print("没有找到该事项")
-            return implementcode
-
-
     def resultstate(self,x):
         self.df.loc[x,"评价状态"]="已评价"
     
@@ -95,7 +81,6 @@ class HandleExcle(object):
         first_url = self.first_url.format(servicecode,projid,servicename,idcard,name,tel,projectno)
         second_url = self.second_url.format(servicecode,projid,servicename,idcard,name,tel,projectno)
         third_url = self.third_url.format(servicecode,projid,servicename,idcard,name,tel,projectno)
-        #url=self.base_url.format(projid,servicecode,name,servicename,idcard,tel,projectno)
         return first_url,second_url,third_url
 
     
@@ -105,9 +90,11 @@ class HandleExcle(object):
         tel_judge = re.match(ret,tel_num)
         tel_judge_two = re.match('\*{7}',tel_num)
         if tel_judge:
-            tel_num = "0391-7873031"
+            tel_num = "0391-5917199"
         elif tel_judge_two:
-            tel_num = "0391-7873031"
+            tel_num = "0391-5917199"
+        elif tel_num == '无':
+            tel_num = "0391-5917199"
         return tel_num
 
 

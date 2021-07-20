@@ -1,10 +1,9 @@
 # coding:utf-8
 from utils.handleexcel import HandleExcle,ExcleRemoveDupl,ExcelConcat,write_excle
-from utils.postcontent import ProjectContent,CommitContent,TelCommitContent
-from utils.test_login import Test_loggin,Tel_loggin,LoginPage,AddPage
+from utils.postcontent import ProjectContent,TelCommitContent
+from utils.test_login import Test_loggin,Tel_loggin
 from utils.config import login_url,home_url,contents,savefile,filecontents,setindex_col,offerorname,offerortelphone
-from playwright.sync_api import sync_playwright
-from playwright.sync_api import BrowserContext
+
 
 def main():
     #运行程序
@@ -47,45 +46,15 @@ def tel_evaluation():
     ec.excle_concat()
 
 
-def second_evaluation():
-    playwright = sync_playwright().start()
-    #以无头模式运行
-    browser = playwright.chromium.launch()
-    #browser = playwright.chromium.launch(headless=False,slow_mo=200)
-    context = browser.new_context()
-    lp=LoginPage(context)
-    lp.to_login()
-    ap=AddPage(context) 
-    he=HandleExcle(savefile)
-    if "评价状态" not in he.column_list:
-        he.insert_column()
-    for i in range(0,he.max_num): 
-        tel = he.get_tel(i)
-        url = he.get_url(i)
-        #print("*"*50)
-        #ap.add_content(url[0],tel)
-        ap.add_content(url[1],tel)
-        ap.add_content(url[2],tel)
-    context.close()
-    browser.close()
-
 
 if __name__ == '__main__':
-    cityid='001003018006016'
-    cityname='修武县'
-    # cityid='001003018006016003017'
-    # cityname='县税务局'
-    # cityid='001003018006016003018'
-    # cityname='修武县人力资源和社会保障局'
-    #设置读取页面起始结束页
-    # cityid="001003018006016003009"
-    # cityname="修武县市场监督管理局"
+    cityid='001003018006012'
+    cityname='沁阳市'
     pagestart=1
-    pageend=2
+    pageend=3
     # #运行程序
     main()
-    # 进行第一次评价
+    # 进行评价
     tel_evaluation()
-    #进行第二次评价
-    second_evaluation()
+
 

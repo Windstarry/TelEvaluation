@@ -1,7 +1,6 @@
 import json
 import os
 import time
-from playwright.sync_api import sync_playwright
 from datetime import datetime
 from pathlib import Path
 from selenium import webdriver
@@ -10,8 +9,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from utils.config import USENAME,PASSWORD,TELUSENAME,TELPASSWORD,EVALUATIONNAME
-from playwright.sync_api import sync_playwright
-from playwright.sync_api import BrowserContext
 import time
 
 class Test_loggin(object):
@@ -196,57 +193,3 @@ class Tel_loggin(object):
         print(cookies_dict)
         jsessionid=cookies_dict['JSESSIONID']
         return jsessionid
-
-
-class LoginPage(BrowserContext):
-    
-    def __init__(self,context):
-        self.context = context
-        self.username = '焦作市修武县_电话邀评'
-        self.password = "Abc123#$"
-        self.loginurl = 'http://59.207.104.12:8090//login'
-    
-
-    def to_login(self):
-        page = self.context.new_page()
-        # Go to http://59.207.104.12:8090//login
-        page.goto(self.loginurl,wait_until="load")
-        # Fill input[name="username"]
-        page.fill("input[name=\"username\"]", self.username)
-        # Fill input[name="password"]
-        page.fill("input[name=\"password\"]", self.password)
-        # Check input[name="noLogin"]
-        page.check("input[name=\"noLogin\"]")
-        with page.expect_navigation():
-            page.click("//button[normalize-space(.)='登录']")
-        page.wait_for_selector("//img")
-        # Click //img
-        with page.expect_popup() as popup_info:
-            page.click("//img")
-        page1 = popup_info.value
-        page1.close()
-        print("开始进入电话邀评界面")
-        
-        return AddPage(self.context)
-
-
-class AddPage(BrowserContext):
-    
-    def __init__(self,context):
-        self.context = context
-    
-    def add_content(self,url,tel): 
-        page = self.context.new_page()
-        page.goto(url,wait_until="load")
-        try:
-            page.click("input[name=\"evaluatorPhone\"]")
-            page.fill("input[name=\"evaluatorPhone\"]", "")
-            page.fill("input[name=\"evaluatorPhone\"]", f"{tel}")
-            page.click("text=\"提交评价\"")
-            time.sleep(0.5)
-        except:
-            print("未找到这个事项")
-            pass
-        finally:
-            print("{}完成评价".format(tel))
-            page.close()
