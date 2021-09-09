@@ -9,14 +9,12 @@ class HandleExcle(object):
         self.df=pd.read_excel(filename,dtype=str)
         self.max_num=self.df.shape[0]
         self.column_list=list(self.df.columns)
-        self.first_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=3"
-        self.second_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=2&evaluteCount=2&evaluatecount=2"
-        self.third_url = "http://59.207.104.196:8081/ycslypt_web/pingjia.action?sid={}&projid={}&projectname={}&cardnumber={}&evaluatorName={}&evaluatefrom=4&projectNo={}&proStatus=1&evaluteCount=3&evaluatecount=3"
+
     
     def get_tel(self,x):
         tel=self.df["手机号码"].at[x]
         if pd.isnull(tel):
-            tel = '0391-5917199'
+            tel = '0391-7118602'
         else:   
             tel = self.tel_num_judge(tel)
         return tel
@@ -52,10 +50,6 @@ class HandleExcle(object):
         result=self.df["评价状态"].at[x]
         return result
     
-    def get_servicecode(self,x):
-        servicecode=str(self.df["事项编码"].at[x])
-        return servicecode
-
 
     def resultstate(self,x):
         self.df.loc[x,"评价状态"]="已评价"
@@ -70,19 +64,6 @@ class HandleExcle(object):
         self.df.insert(1,"评价状态",'未评价')
 
     
-    def get_url(self,x):
-        servicecode=self.get_servicecode(x)
-        projid=self.get_projid(x)
-        servicename =self.get_servicename(x)
-        idcard =self.get_idcard(x)
-        name =self.get_name(x)
-        tel =self.get_tel(x)
-        projectno =self.get_implementcode(x)
-        first_url = self.first_url.format(servicecode,projid,servicename,idcard,name,tel,projectno)
-        second_url = self.second_url.format(servicecode,projid,servicename,idcard,name,tel,projectno)
-        third_url = self.third_url.format(servicecode,projid,servicename,idcard,name,tel,projectno)
-        return first_url,second_url,third_url
-
     
     @staticmethod
     def tel_num_judge(tel_num):
@@ -90,52 +71,14 @@ class HandleExcle(object):
         tel_judge = re.match(ret,tel_num)
         tel_judge_two = re.match('\*{7}',tel_num)
         if tel_judge:
-            tel_num = "0391-5917199"
+            tel_num = "0391-7873031"
         elif tel_judge_two:
-            tel_num = "0391-5917199"
-        elif tel_num == '无':
-            tel_num = "0391-5917199"
+            tel_num = "0391-7873031"
+        elif tel_num == '空':
+            tel_num = "0391-7118602"
+        else:
+            tel_num = tel_num
         return tel_num
-
-
-class ExcleRemoveDupl(object):
-    
-    def __init__(self,fileA,fileB,fileSave,setindex_col):
-        self.fileA = fileA
-        self.fileB = fileB
-        self.fileSave = fileSave
-        self.setindex_col = setindex_col
-
-
-    def excle_removedupl(self):
-        df1=pd.read_excel(self.fileA)
-        df2=pd.read_excel(self.fileB)
-        projids=list(df2[self.setindex_col])
-        #去除申报号在已评价事项里办件信息
-        result=df1[~df1[self.setindex_col].isin(projids)]
-        #设置表格的index
-        result.set_index(self.setindex_col,inplace=True)
-        result.to_excel(self.fileSave)
-
-
-class ExcelConcat(object):
-    
-    def __init__(self,fileA,fileB,fileSave,setindex_col):
-        self.fileA = fileA
-        self.fileB = fileB
-        self.fileSave = fileSave
-        self.setindex_col = setindex_col
-
-    def excle_concat(self):
-        df1=pd.read_excel(self.fileA)
-        df2=pd.read_excel(self.fileB)
-        #读取两个excle文件合并
-        result = pd.concat((df1,df2))
-        #以setindex_col为基准去掉重复数据
-        result.drop_duplicates(subset=[self.setindex_col],keep='first',inplace=True)
-        #设置表格的index
-        result.set_index(self.setindex_col,inplace=True)
-        result.to_excel(self.fileSave)
 
 
 def write_excle(content,savefile):
@@ -143,13 +86,3 @@ def write_excle(content,savefile):
     df.set_index(df.columns[0],inplace=True)
     df.to_excel(savefile)
 
-
-def tel_num_judge(tel_num):
-    ret = '\d{3}\*{7}\d{1}'
-    tel_judge = re.match(ret,tel_num)
-    tel_judge_two = re.match('\*{7}',tel_num)
-    if tel_judge:
-        tel_num = "0391-7873031"
-    elif tel_judge_two:
-        tel_num = "0391-7873031"
-    return tel_num

@@ -1,15 +1,16 @@
 # coding:utf-8
-import requests
+import re
+import requests,os,json
 from utils.handleexcel import write_excle
 from utils.config import contents,savefile
-
+import json
 
 
 class ProjectContent(object):
-    
-    
-    def __init__(self,pagenum,cityid,cityname,jsessionid):
-        self.url = "http://59.207.104.4:8060/rsp/view.action"
+
+
+    def __init__(self,cityid,jsessionid):
+        self.url = "http://59.207.104.9:8062/hd/app/module/default/jsp/view/view.action"
         self.headers ={
                     'Connection': 'keep-alive',
                     'Content-Length': '138',
@@ -24,211 +25,107 @@ class ProjectContent(object):
                     'Accept-Language': 'zh-CN,zh;q=0.9', 
                     'Cookie': f'JSESSIONID={jsessionid}',  
                     }
-        self.pagenum=pagenum
         self.cityid=cityid
-        self.cityname=cityname
-    
+        self.cookie_path='./source'
+        self.cookie_name = 'cookies_pjxxk.txt'
 
-    def get_projectlist(self):
+
+    def get_pro_total(self):
+        cookies = self.get_cookies()
         payload = {
-                '_search':'0',
-                'ID': f'{self.cityid}',
-                'TREENODE_NAME':f'{self.cityname}',
-                'viewId': 'A97604BB8E12B56595743D8BAF0651CC',
                 'fn': 'grid_list',
-                'page': f'{self.pagenum}',
-                'rows': '50',
+                'sysMenuId': '8FCE1CFE6FE34A1328D547E398C43DB4',
+                'viewId': 'B3E884EFADCE823956080778FA5B937A',
+                'sysUnid': '2CAA2C792CF1C85A91A8DE67D1FAFA40',
+                'ID': f'{self.cityid}',
+                'TYPE': 'dept',
+                'SERIALNUMBER':'4108',
+                'fn': 'grid_list',
+                'page': '-1',
+                'rows': '-1',
                 }
         requests.packages.urllib3.disable_warnings()
-        resp = requests.post(self.url, data=payload, headers=self.headers,verify=False)
+        resp = requests.post(self.url, cookies=cookies,data=payload, headers=self.headers,verify=False)
         pro_contents=resp.json()
-        if 'rows' in pro_contents.keys():
-            pro_lists=pro_contents['rows']
-            if len(pro_lists) > 0:
-                for pro_list in pro_lists:
-                    projid=pro_list["PROJID"]
-                    servicecode=pro_list["SERVICECODE"]
-                    transact_name=pro_list["PROJECTNAME"]
-                    card_num=pro_list["APPLY_CARDNUMBER"]
-                    tel_num=pro_list["TELPHONE"]
-                    applicant=pro_list["APPLYNAME"]
-                    dept_name=pro_list["DEPTNAME"]
-                    time=pro_list["TRANSACTTIME"]
-                    result=pro_list["HANDLESTATE"]
-                    content={
-                        "申报号":projid,
-                        '办理单位':dept_name,
-                        "事项编码":servicecode,
-                        "办件名称":transact_name,
-                        "证件号码":str(card_num),
-                        "手机号码":str(tel_num),
-                        "申请人":applicant,
-                        "办结时间":time,
-                        "办件状态":result
-                    }
-                    print(content)
-                    contents.append(content)
+        if 'total' in pro_contents.keys():
+            pro_total=pro_contents['total']
+            return pro_total
+
+    
+    def get_pro_list(self):
+        pro_total = self.get_pro_total()
+        num = pro_total//50
+        for i in range(num+1):
+            payload = {
+                'fn': 'grid_list',
+                'sysMenuId': '8FCE1CFE6FE34A1328D547E398C43DB4',
+                'viewId': 'B3E884EFADCE823956080778FA5B937A',
+                'sysUnid': '2CAA2C792CF1C85A91A8DE67D1FAFA40',
+                'ID': f'{self.cityid}',
+                'TYPE': 'dept',
+                'SERIALNUMBER':'4108',
+                'fn': 'grid_list',
+                'page': f'{i}',
+                'rows': '50',
+                }
+            requests.packages.urllib3.disable_warnings()
+            resp = requests.post(self.url,data=payload, headers=self.headers,verify=False)
+            pro_contents=resp.json()            
+            if 'rows' in pro_contents.keys():
+                pro_lists=pro_contents['rows']
+                if len(pro_lists) > 0:
+                    for pro_list in pro_lists:
+                        projid=pro_list["PROJID"]
+                        servicecode=pro_list["SERVICECODE"]
+                        transact_name=pro_list["SERVICENAME"]
+                        card_num=pro_list["APPLYCARDNUM"]
+                        tel_num=pro_list["TELPHONE"]
+                        applicant=pro_list["CONTACTMAN"]
+                        dept_name=pro_list["DEPTID"]
+                        time=pro_list["TRANSACTTIME"]
+                        result=pro_list["HANDLESTATE"]
+                        content={
+                            "申报号":projid,
+                            '办理单位':dept_name,
+                            "事项编码":servicecode,
+                            "办件名称":transact_name,
+                            "证件号码":str(card_num),
+                            "手机号码":str(tel_num),
+                            "申请人":applicant,
+                            "办结时间":time,
+                            "办件状态":result
+                        }
+                        print(content)
+                        contents.append(content)
         write_excle(contents,savefile)
 
 
-class CommitContent(object):
-    
-    def __init__(self,tel,projid,servicecode,evaluatorname,projectname,cardnumber,projectno):
-        self.url = "http://was.hnzwfw.gov.cn/ycslypt_web/pingjia.action"
-        self.headers ={
-                    'Accept': 'application/json, text/javascript, */*; q=0.01',
-                    'Accept-Encoding': 'gzip, deflate',
-                    'Accept-Language': 'zh-CN,zh;q=0.9', 
-                    'Connection': 'keep-alive',
-                    'Content-Length': '2123',
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'Host': 'was.hnzwfw.gov.cn' , 
-                    'Origin':'http://was.hnzwfw.gov.cn',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Cookie': 'JSESSIONID=ADFD2374489F509651FDF81ABCD16B3C; app_cook=webapp_1', 
-                    }
-        self.tel=tel
-        self.projid=projid
-        self.servicecode=servicecode
-        self.evaluatorname=evaluatorname
-        self.projectname=projectname
-        self.cardnumber=cardnumber
-        self.projectno=projectno
-    
-    
-    def get_projectlist(self):
-        payload = {
-                'fn': 'save',
-                'projid': f'{self.projid}',
-                'serviceCode': f'{self.servicecode}',
-                'evaluatefrom': '4',
-                'userType': '',
-                'evaluatorName': f'{self.evaluatorname}',
-                'isAnonymity': '2',
-                'evaluteCount': '1',
-                'projectname': f'{self.projectname}',
-                'isOpened': '1',
-                'checkState': '1',
-                'evaluateContent': '',
-                'satisfactionEvaluate': '5',
-                'evaluateDetail': '510,517',
-                'syncStatus': 'I',
-                'isAboveLegalday': '2',
-                'isOvercharge': '2',
-                'isMediation': '2',
-                'serviceAttitudeEvaluate': '1',
-                'serviceAttitudeReason': '',
-                'workAttitudeEvaluate': '1',
-                'workAttitudeReason': '',
-                'evaluatorCardnumber': f'{self.cardnumber}',
-                'belongsystem': '',
-                'evaluatecount': '1',
-                'evaluatorPhone': f'{self.tel}',
-                'token': '7bc414579c16f38e324553a89f95cbf6',
-                'evaluateDetailArray[]': '510',
-                'evaluateDetailArray[]': '517',
-                'huaKuaiFlag': 'true',
-                'checkFlag': 'notRobot',
-                'projectNo': f'{self.projectno}',
-                'proStatus': '3',
-                }
-        requests.packages.urllib3.disable_warnings()
-        resp = requests.post(self.url, data=payload, headers=self.headers,verify=False,timeout=200)
-        print(resp.json())
-        return resp.json()
-    
-    def second_evaluate(self):
-        payload = {
-                'fn': 'save',
-                'projid': f'{self.projid}',
-                'serviceCode': f'{self.servicecode}',
-                'evaluatefrom': '4',
-                'userType': '',
-                'evaluatorName': f'{self.evaluatorname}',
-                'isAnonymity': '2',
-                'evaluteCount': '2',
-                'projectname': f'{self.projectname}',
-                'isOpened': '1',
-                'checkState': '1',
-                'evaluateContent': '',
-                'satisfactionEvaluate': '5',
-                'evaluateDetail': '510,517',
-                'syncStatus': 'I',
-                'isAboveLegalday': '2',
-                'isOvercharge': '2',
-                'isMediation': '2',
-                'serviceAttitudeEvaluate': '1',
-                'serviceAttitudeReason': '',
-                'workAttitudeEvaluate': '1',
-                'workAttitudeReason': '',
-                'evaluatorCardnumber': f'{self.cardnumber}',
-                'belongsystem': '',
-                'evaluatecount': '2',
-                'evaluatorPhone': f'{self.tel}',
-                'token': '7bc414579c16f38e324553a89f95cbf6',
-                'evaluateDetailArray[]': '510',
-                'evaluateDetailArray[]': '517',
-                'huaKuaiFlag': 'true',
-                'checkFlag': 'notRobot',
-                'projectNo': f'{self.projectno}',
-                'proStatus': '2',
-                }
-        requests.packages.urllib3.disable_warnings()
-        resp = requests.post(self.url, data=payload, headers=self.headers,verify=False,timeout=200)
-        print(resp.json())
-        return resp.json()
+    def get_cookies(self):
+            with open(os.path.join(self.cookie_path, self.cookie_name),'r') as cookief:
+                #使用json读取cookies 注意读取的是文件 所以用load而不是loads
+                cookieslist = json.load(cookief)
+                # 方法1删除该字段
+                cookies_dict = dict()
+                for cookie in cookieslist:
+                    #该字段有问题所以删除就可以,浏览器打开后记得刷新页面 有的网页注入cookie后仍需要刷新一下
+                    if 'expiry' in cookie:
+                        del cookie['expiry']
+                    cookies_dict[cookie['name']] = cookie['value']
+            print(cookies_dict)
+            return cookies_dict
 
-    def third_evaluate(self):
-        payload = {
-                'fn': 'save',
-                'projid': f'{self.projid}',
-                'serviceCode': f'{self.servicecode}',
-                'evaluatefrom': '4',
-                'userType': '',
-                'evaluatorName': f'{self.evaluatorname}',
-                'isAnonymity': '2',
-                'evaluteCount': '3',
-                'projectname': f'{self.projectname}',
-                'isOpened': '1',
-                'checkState': '1',
-                'evaluateContent': '',
-                'satisfactionEvaluate': '5',
-                'evaluateDetail': '510,517',
-                'syncStatus': 'I',
-                'isAboveLegalday': '2',
-                'isOvercharge': '2',
-                'isMediation': '2',
-                'serviceAttitudeEvaluate': '1',
-                'serviceAttitudeReason': '',
-                'workAttitudeEvaluate': '1',
-                'workAttitudeReason': '',
-                'evaluatorCardnumber': f'{self.cardnumber}',
-                'belongsystem': '',
-                'evaluatecount': '3',
-                'evaluatorPhone': f'{self.tel}',
-                'token': '7bc414579c16f38e324553a89f95cbf6',
-                'evaluateDetailArray[]': '510',
-                'evaluateDetailArray[]': '517',
-                'huaKuaiFlag': 'true',
-                'checkFlag': 'notRobot',
-                'projectNo': f'{self.projectno}',
-                'proStatus': '1',
-                }
-        requests.packages.urllib3.disable_warnings()
-        resp = requests.post(self.url, data=payload, headers=self.headers,verify=False,timeout=200)
-        print(resp.json())
-        return resp.json()
 
 
 class TelCommitContent(object):
     
 
-    def __init__(self,tel,projid,offerorname,offerortelphone,jsessionid):
+    def __init__(self,tel,projid,projname,offerorname,offerortelphone,jsessionid):
         self.url = "http://59.207.104.9:8062/hd//essm/jsp/comment/appointment_savecomment.action"
+        self.cookie_path='./source'
+        self.cookie_name = 'cookies_pjxxk.txt'
         self.headers ={
                     'Connection': 'keep-alive',
-                    'Content-Length': '405',
+                    'Content-Length': '404',
                     'Host': '59.207.104.9:8062' , 
                     'Origin':'http://59.207.104.9:8062',
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -241,11 +138,27 @@ class TelCommitContent(object):
                     }
         self.tel=tel
         self.projid=projid
+        self.projname = projname
         self.offerorname=offerorname
         self.offerortelphone=offerortelphone
 
-    
+
+    def get_cookies(self):
+        with open(os.path.join(self.cookie_path, self.cookie_name),'r') as cookief:
+            #使用json读取cookies 注意读取的是文件 所以用load而不是loads
+            cookieslist = json.load(cookief)
+            # 方法1删除该字段
+            cookies_dict = dict()
+            for cookie in cookieslist:
+                #该字段有问题所以删除就可以,浏览器打开后记得刷新页面 有的网页注入cookie后仍需要刷新一下
+                if 'expiry' in cookie:
+                    del cookie['expiry']
+                cookies_dict[cookie['name']] = cookie['value']
+        return cookies_dict
+
+   
     def commit_projectlist(self):
+        cookies = self.get_cookies()
         payload = {
                 'fn': 'save',
                 'projid': f'{self.projid}',
@@ -268,11 +181,17 @@ class TelCommitContent(object):
                 'offerorName': f'{self.offerorname}',
                 'offerorTelphone': f'{self.offerortelphone}',
                 'extend_2': '1',
+                'viewId':'B3E884EFADCE823956080778FA5B937A',
                 }
+        url = 'http://59.207.104.9:8062/hd//essm/jsp/comment/appointment.jsp?projid={}&projname={}&viewId=B3E884EFADCE823956080778FA5B937A&phone={}'.format(self.projid,self.projname,self.tel)
         requests.packages.urllib3.disable_warnings()
-        resp = requests.post(self.url, data=payload, headers=self.headers,verify=False)
-        #print(resp.json())
-        return resp.json()
+        resp = requests.post(self.url,cookies=cookies, data=payload, headers=self.headers,verify=False)
+        try:
+            msg = json.loads(resp.text)
+        except:
+            msg = {'msg':'评价失败'}
+        print(msg)
+        return msg
 
 
 
