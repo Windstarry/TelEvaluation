@@ -35,6 +35,8 @@ class Tel_loggin(object):
         option = Options()
         option.add_experimental_option('excludeSwitches', ['enable-automation'])
         option.add_experimental_option('useAutomationExtension', False)
+        option.add_argument('--ignore-certificate-errors')
+        option.add_argument('--ignore-ssl-errors')
         driver = webdriver.Chrome(executable_path=driver_path,options=option)
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
